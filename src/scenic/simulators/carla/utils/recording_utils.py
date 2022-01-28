@@ -345,6 +345,16 @@ class FrameRecording:
 
         return FrameRecording(json_data)
 
-    def save(self, filepath):
-        with open(filepath, 'w') as f:
-            json.dump(self.frames, f)
+    # def save(self, filepath):
+    #     with open(filepath, 'w') as f:
+    #         json.dump(self.frames, f)
+
+    def save(self, file_dir, sensor_name, common_frame_indices, data):
+        sensor_dir = os.path.join(file_dir, sensor_name)
+        if not os.path.isdir(sensor_dir):
+            os.mkdir(sensor_dir)
+
+        print("save "+sensor_name+" data")
+        for index in common_frame_indices:
+            file_path = os.path.join(sensor_dir, str(index)+'.png')
+            data[index].save_to_disk(file_path)

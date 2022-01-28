@@ -65,6 +65,13 @@ class CarlaSimulation(DrivingSimulation):
 		self.client.load_world(map)
 		self.world = self.client.get_world()
 		self.blueprintLib = self.world.get_blueprint_library()
+
+		weather = scene.params.get("weather")
+		if weather is not None:
+			if isinstance(weather, str):
+				self.world.set_weather(getattr(carla.WeatherParameters, weather))
+			elif isinstance(weather, dict):
+				self.world.set_weather(carla.WeatherParameters(**weather))
 		
 		# Reloads current world: destroys all actors, except traffic manager instances
 		# self.client.reload_world()
@@ -140,7 +147,7 @@ class CarlaSimulation(DrivingSimulation):
 						self.sensors = []
 
 						for sensor in sensors:
-							t_x, t_y, t_z = sensor['transform']['location']
+							t_x, t_y, t_z = sensor['transform']#['location']
 							loc = carla.Location(x=t_x, y=t_y, z=t_z)
 							rot = carla.Rotation()
 							if 'rotation' in sensor['transform']:
@@ -157,8 +164,9 @@ class CarlaSimulation(DrivingSimulation):
 									'name': sensor['name'],
 									'type': sensor['type'],
 									'rgb_buffer': [],
-									'depth_buffer': [],
-									'semantic_buffer': []
+									'rgb_settings': {}
+									# 'depth_buffer': [],
+									# 'semantic_buffer': []
 								}
 								self.sensors.append(sensor_dict)
 
@@ -166,27 +174,49 @@ class CarlaSimulation(DrivingSimulation):
 								bp.set_attribute('image_size_x', str(VIEW_WIDTH))
 								bp.set_attribute('image_size_y', str(VIEW_HEIGHT))
 								bp.set_attribute('fov', str(VIEW_FOV))
+
+								for cam_attr in ('bloom_intensity', 'fov', 'fstop',
+												 'image_size_x', 'image_size_y', 'iso',
+												 'gamma', 'lens_flare_intensity',
+												 'sensor_tick', 'shutter_speed', 'lens_circle_falloff',
+												 'lens_circle_multiplier', 'lens_k', 'lens_kcube',
+												 'lens_x_size', 'lens_y_size', 'min_fstop',
+												 'blade_count', 'exposure_mode', 'exposure_compensation',
+												 'exposure_min_bright', 'exposure_max_bright',
+												 'exposure_speed_up', 'exposure_speed_down',
+												 'calibration_constant', 'focal_distance',
+												 'blur_amount', 'blur_radius', 'motion_blur_intensity',
+												 'motion_blur_max_distortion', 'motion_blur_min_object_screen_size',
+												 'slope', 'toe', 'shoulder', 'black_clip', 'white_clip',
+												 'temp', 'tint', 'chromatic_aberration_intensity',
+												 'chromatic_aberration_offset', 'enable_postprocess_effects'):
+
+									if cam_attr in scene.params:
+										print(f'Setting {cam_attr} to {scene.params[cam_attr]}...')
+										sensor_dict['rgb_settings'][cam_attr] = scene.params[cam_attr]
+										bp.set_attribute(cam_attr, str(scene.params[cam_attr]))
+
 								rgb_cam = self.world.spawn_actor(bp, sensor_transform, attach_to=carlaActor)
 								rgb_buffer = sensor_dict['rgb_buffer']
 								rgb_cam.listen(lambda x: self.process_rgb_image(x, rgb_buffer))
 								sensor_dict['rgb_cam_obj'] = rgb_cam
 
-								bp = self.world.get_blueprint_library().find('sensor.camera.depth')
-								bp.set_attribute('image_size_x', str(VIEW_WIDTH))
-								bp.set_attribute('image_size_y', str(VIEW_HEIGHT))
-								bp.set_attribute('fov', str(VIEW_FOV))
-								depth_cam = self.world.spawn_actor(bp, sensor_transform, attach_to=carlaActor)
-								depth_buffer = sensor_dict['depth_buffer']
-								depth_cam.listen(lambda x: self.process_depth_image(x, depth_buffer))
-								sensor_dict['depth_cam_obj'] = depth_cam
+								# bp = self.world.get_blueprint_library().find('sensor.camera.depth')
+								# bp.set_attribute('image_size_x', str(VIEW_WIDTH))
+								# bp.set_attribute('image_size_y', str(VIEW_HEIGHT))
+								# bp.set_attribute('fov', str(VIEW_FOV))
+								# depth_cam = self.world.spawn_actor(bp, sensor_transform, attach_to=carlaActor)
+								# depth_buffer = sensor_dict['depth_buffer']
+								# depth_cam.listen(lambda x: self.process_depth_image(x, depth_buffer))
+								# sensor_dict['depth_cam_obj'] = depth_cam
 
-								bp = self.world.get_blueprint_library().find('sensor.camera.semantic_segmentation')
-								bp.set_attribute('image_size_x', str(VIEW_WIDTH))
-								bp.set_attribute('image_size_y', str(VIEW_HEIGHT))
-								semantic_cam = self.world.spawn_actor(bp, sensor_transform, attach_to=carlaActor)
-								semantic_buffer = sensor_dict['semantic_buffer']
-								semantic_cam.listen(lambda x: self.process_semantic_image(x, semantic_buffer))
-								sensor_dict['semantic_cam_obj'] = semantic_cam
+								# bp = self.world.get_blueprint_library().find('sensor.camera.semantic_segmentation')
+								# bp.set_attribute('image_size_x', str(VIEW_WIDTH))
+								# bp.set_attribute('image_size_y', str(VIEW_HEIGHT))
+								# semantic_cam = self.world.spawn_actor(bp, sensor_transform, attach_to=carlaActor)
+								# semantic_buffer = sensor_dict['semantic_buffer']
+								# semantic_cam.listen(lambda x: self.process_semantic_image(x, semantic_buffer))
+								# sensor_dict['semantic_cam_obj'] = semantic_cam
 
 							elif sensor['type'] == 'lidar':
 								sensor_dict = {
@@ -361,8 +391,8 @@ class CarlaSimulation(DrivingSimulation):
 
 			if sensor['type'] == 'rgb':
 				frame_idxes = {data.frame for data in sensor['rgb_buffer']}
-				frame_idxes = frame_idxes.intersection({data.frame for data in sensor['depth_buffer']})
-				frame_idxes = frame_idxes.intersection({data.frame for data in sensor['semantic_buffer']})
+				# frame_idxes = frame_idxes.intersection({data.frame for data in sensor['depth_buffer']})
+				# frame_idxes = frame_idxes.intersection({data.frame for data in sensor['semantic_buffer']})
 			elif sensor['type'] == 'lidar':
 				frame_idxes = {data.frame for data in sensor['lidar_buffer']}
 			elif sensor['type'] == 'radar':
@@ -380,35 +410,36 @@ class CarlaSimulation(DrivingSimulation):
 
 		for sensor in self.sensors:
 			if sensor['type'] == 'rgb':
-				rgb_recording = rec_utils.VideoRecording()
-				depth_recording = rec_utils.VideoRecording()
-				semantic_recording = rec_utils.VideoRecording()
+				print("saving rgb data")
+
+				rgb_recording = rec_utils.FrameRecording()
+				# depth_recording = rec_utils.FrameRecording()
+				# semantic_recording = rec_utils.FrameRecording()
 
 				rgb_data = {data.frame: data for data in sensor['rgb_buffer']}
-				depth_data = {data.frame: data for data in sensor['depth_buffer']}
-				semantic_data = {data.frame: data for data in sensor['semantic_buffer']}
+				# depth_data = {data.frame: data for data in sensor['depth_buffer']}
+				# semantic_data = {data.frame: data for data in sensor['semantic_buffer']}
 
 				for frame_idx in common_frame_idxes:
 					rgb_recording.add_frame(rgb_data[frame_idx])
-					depth_recording.add_frame(depth_data[frame_idx])
-					semantic_recording.add_frame(semantic_data[frame_idx])
+					# depth_recording.add_frame(depth_data[frame_idx])
+					# semantic_recording.add_frame(semantic_data[frame_idx])
 
 				sensor_dir = os.path.join(save_dir, sensor['name'])
 				if not os.path.isdir(sensor_dir):
 					os.mkdir(sensor_dir)
 
-				rgb_filepath = os.path.join(sensor_dir, 'rgb.mp4')
-				depth_filepath = os.path.join(sensor_dir, 'depth.mp4')
-				semantic_filepath = os.path.join(sensor_dir, 'semantic.mp4')
+				rgb_recording.save(sensor_dir, 'rgb', common_frame_idxes, rgb_data)
+				# depth_recording.save(sensor_dir, 'depth', common_frame_idxes, depth_data)
+				# semantic_recording.save(sensor_dir, 'semantic', common_frame_idxes, semantic_data)
 
-				rgb_recording.save(rgb_filepath)
-				depth_recording.save(depth_filepath)
-				semantic_recording.save(semantic_filepath)
+
 
 			elif sensor['type'] == 'lidar':
 				lidar_recording = rec_utils.FrameRecording()
 
 				lidar_data = {data.frame: data for data in sensor['lidar_buffer']}
+				init_point_cloud = sensor['lidar_buffer'][0]
 
 				for frame_idx in common_frame_idxes:
 					classified_lidar_points = [[i.point.x, i.point.y, i.point.z, i.object_tag] for i in lidar_data[frame_idx]]
@@ -419,8 +450,11 @@ class CarlaSimulation(DrivingSimulation):
 					os.mkdir(sensor_dir)
 
 				lidar_filepath = os.path.join(sensor_dir, 'lidar.json')
-
 				lidar_recording.save(lidar_filepath)
+
+				ply_filepath = os.path.join(sensor_dir, 'lidar.ply')
+				init_point_cloud.save_to_disk(ply_filepath)
+
 
 			elif sensor['type'] == 'radar':
 				radar_recording = rec_utils.FrameRecording()
@@ -442,3 +476,9 @@ class CarlaSimulation(DrivingSimulation):
 
 		bbox_filepath = os.path.join(bbox_dir, 'bboxes.json')
 		bbox_recording.save(bbox_filepath)
+
+		for sensor in self.sensors:
+			if sensor['type'] == 'rgb':
+				rgb_filepath = os.path.join(bbox_dir, 'rgb_settings.json')
+				with open(rgb_filepath, 'w') as f:
+					json.dump(sensor['rgb_settings'], f, indent=4)

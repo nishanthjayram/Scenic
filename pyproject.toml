@@ -33,7 +33,7 @@ opencv-python = "~4.2.0.34"
 numpy = "^1.18.2"
 pillow = "^7.1.1"
 pynverse = "^0.1.4"
-pygame = "^2.0.0.dev6"
+pygame = "^2.1.0"
 attrs = "^19.3.0"
 wrapt = "^1.12.1"
 
