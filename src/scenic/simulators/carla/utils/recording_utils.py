@@ -24,10 +24,6 @@ try:
 except ImportError:
     pass
 
-VIEW_WIDTH = 1280.0
-VIEW_HEIGHT = 720.0
-VIEW_FOV = 90.0
-
 BB_COLOR = (248, 64, 24)
 
 class BBoxUtil(object):
@@ -106,7 +102,7 @@ class BBoxUtil(object):
         return bounding_boxes_2d
 
     @staticmethod
-    def draw_bounding_boxes(display, bounding_boxes):
+    def draw_bounding_boxes(display, bounding_boxes, VIEW_WIDTH=1600, VIEW_HEIGHT=900):
         """
         Draws bounding boxes on pygame display.
         """
