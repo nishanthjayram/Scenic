@@ -1,12 +1,13 @@
 [
 	{
+
 		"name": "cam",
 		"type": "rgb",
 		"transform": [0, 0, 2.4],
 		"settings": {
-			"VIEW_WIDTH": 1600,
-			"VIEW_HEIGHT": 900,
-			"VIEW_FOV": 90
+			"image_size_x": 1600,
+			"image_size_y": 900,
+			"fov": 90
 		}
 	}
 ]

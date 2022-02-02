@@ -156,9 +156,9 @@ class CarlaSimulation(DrivingSimulation):
 							sensor_transform = carla.Transform(loc, rot)
 
 							if sensor['type'] == 'rgb':
-								VIEW_WIDTH = sensor['settings']['VIEW_WIDTH']
-								VIEW_HEIGHT = sensor['settings']['VIEW_HEIGHT']
-								VIEW_FOV = sensor['settings']['VIEW_FOV']
+								image_size_x = sensor['settings']['image_size_x']
+								image_size_y = sensor['settings']['image_size_y']
+								fov = sensor['settings']['fov']
 
 								sensor_dict = {
 									'name': sensor['name'],
@@ -171,9 +171,9 @@ class CarlaSimulation(DrivingSimulation):
 								self.sensors.append(sensor_dict)
 
 								bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
-								bp.set_attribute('image_size_x', str(VIEW_WIDTH))
-								bp.set_attribute('image_size_y', str(VIEW_HEIGHT))
-								bp.set_attribute('fov', str(VIEW_FOV))
+								bp.set_attribute('image_size_x', str(image_size_x))
+								bp.set_attribute('image_size_y', str(image_size_y))
+								bp.set_attribute('fov', str(fov))
 
 								for cam_attr in ('bloom_intensity', 'fov', 'fstop',
 												 'image_size_x', 'image_size_y', 'iso',
@@ -202,17 +202,17 @@ class CarlaSimulation(DrivingSimulation):
 								sensor_dict['rgb_cam_obj'] = rgb_cam
 
 								# bp = self.world.get_blueprint_library().find('sensor.camera.depth')
-								# bp.set_attribute('image_size_x', str(VIEW_WIDTH))
-								# bp.set_attribute('image_size_y', str(VIEW_HEIGHT))
-								# bp.set_attribute('fov', str(VIEW_FOV))
+								# bp.set_attribute('image_size_x', str(image_size_x))
+								# bp.set_attribute('image_size_y', str(image_size_y))
+								# bp.set_attribute('fov', str(fov))
 								# depth_cam = self.world.spawn_actor(bp, sensor_transform, attach_to=carlaActor)
 								# depth_buffer = sensor_dict['depth_buffer']
 								# depth_cam.listen(lambda x: self.process_depth_image(x, depth_buffer))
 								# sensor_dict['depth_cam_obj'] = depth_cam
 
 								# bp = self.world.get_blueprint_library().find('sensor.camera.semantic_segmentation')
-								# bp.set_attribute('image_size_x', str(VIEW_WIDTH))
-								# bp.set_attribute('image_size_y', str(VIEW_HEIGHT))
+								# bp.set_attribute('image_size_x', str(image_size_x))
+								# bp.set_attribute('image_size_y', str(image_size_y))
 								# semantic_cam = self.world.spawn_actor(bp, sensor_transform, attach_to=carlaActor)
 								# semantic_buffer = sensor_dict['semantic_buffer']
 								# semantic_cam.listen(lambda x: self.process_semantic_image(x, semantic_buffer))
@@ -321,6 +321,10 @@ class CarlaSimulation(DrivingSimulation):
 			for obj_class, obj_list in classified_actors.items():
 				# Get bounding boxes relative to RGB camera
 				bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.ego)
+				print("BOUNDING BOXES:")
+				print(obj_class)
+				print(bounding_boxes_3d)
+				rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d)
 				# Convert numpy matrices to lists
 				bboxes[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d]
 
@@ -412,7 +416,8 @@ class CarlaSimulation(DrivingSimulation):
 			if sensor['type'] == 'rgb':
 				print("saving rgb data")
 
-				rgb_recording = rec_utils.FrameRecording()
+				rgb_frames = rec_utils.FrameRecording()
+				rgb_recording = rec_utils.VideoRecording()
 				# depth_recording = rec_utils.FrameRecording()
 				# semantic_recording = rec_utils.FrameRecording()
 
@@ -421,6 +426,7 @@ class CarlaSimulation(DrivingSimulation):
 				# semantic_data = {data.frame: data for data in sensor['semantic_buffer']}
 
 				for frame_idx in common_frame_idxes:
+					rgb_frames.add_frame(rgb_data[frame_idx])
 					rgb_recording.add_frame(rgb_data[frame_idx])
 					# depth_recording.add_frame(depth_data[frame_idx])
 					# semantic_recording.add_frame(semantic_data[frame_idx])
@@ -428,8 +434,10 @@ class CarlaSimulation(DrivingSimulation):
 				sensor_dir = os.path.join(save_dir, sensor['name'])
 				if not os.path.isdir(sensor_dir):
 					os.mkdir(sensor_dir)
+				rgb_recording_filepath = os.path.join(sensor_dir, 'rgb.mp4')
 
-				rgb_recording.save(sensor_dir, 'rgb', common_frame_idxes, rgb_data)
+				rgb_frames.save(sensor_dir, 'rgb', common_frame_idxes, rgb_data)
+				rgb_recording.save(rgb_recording_filepath)
 				# depth_recording.save(sensor_dir, 'depth', common_frame_idxes, depth_data)
 				# semantic_recording.save(sensor_dir, 'semantic', common_frame_idxes, semantic_data)
 

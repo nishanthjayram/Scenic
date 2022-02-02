@@ -25,20 +25,24 @@ class SimulationData:
 		# Parameter for lazy fetching of data
 		self.have_fetched_data = False
 
-		self.bboxes_fpath = os.path.join(simulation_dir, 'annotations', 'bboxes.json')
+		# self.bboxes_fpath = os.path.join(simulation_dir, 'annotations', 'bboxes.json')
+		self.bboxes_fpath = os.path.join(simulation_dir, 'bboxes.json')
 		self.bbox_recording = None
 
 		self.sensor_data = {}
 
+		sensor_dir_prefix, _ = os.path.split(simulation_dir)
 		for sensor in sensor_config.get_sensors():
-			sensor_dir = os.path.join(simulation_dir, sensor['name'])
+			sensor_dir = os.path.join(sensor_dir_prefix, sensor['name'])
 
 			if sensor['type'] == 'rgb':
 				# Lazily retrieve simulation data from disk later, just store paths for now
+				rgb_dir = os.path.join(sensor_dir, 'rgb')
+				first_png = os.listdir(rgb_dir)[0]
 				sensor_data_paths = {
 					'rgb': os.path.join(sensor_dir, 'rgb.mp4'),
-					'depth': os.path.join(sensor_dir, 'depth.mp4'),
-					'semantic': os.path.join(sensor_dir, 'semantic.mp4'),
+					# 'depth': os.path.join(sensor_dir, 'depth.mp4'),
+					# 'semantic': os.path.join(sensor_dir, 'semantic.mp4'),
 				}
 
 				data = {
@@ -66,8 +70,8 @@ class SimulationData:
 			if sensor['type'] == 'rgb':
 				recordings = {
 					'rgb': rec_utils.VideoRecording.import_from_file(sensor['data_paths']['rgb']),
-					'depth': rec_utils.VideoRecording.import_from_file(sensor['data_paths']['depth']),
-					'semantic': rec_utils.VideoRecording.import_from_file(sensor['data_paths']['semantic']),
+					# 'depth': rec_utils.VideoRecording.import_from_file(sensor['data_paths']['depth']),
+					# 'semantic': rec_utils.VideoRecording.import_from_file(sensor['data_paths']['semantic']),
 				}
 
 				sensor['recordings'] = recordings
@@ -98,8 +102,8 @@ class SimulationData:
 			if sensor['type'] == 'rgb':
 				sensor_frame = {
 					'rgb': sensor['recordings']['rgb'].get_frame(frame_idx),
-					'depth': sensor['recordings']['depth'].get_frame(frame_idx),
-					'semantic': sensor['recordings']['semantic'].get_frame(frame_idx),
+					# 'depth': sensor['recordings']['depth'].get_frame(frame_idx),
+					# 'semantic': sensor['recordings']['semantic'].get_frame(frame_idx),
 				}
 
 				retval[sensor_name] = sensor_frame
@@ -142,12 +146,12 @@ def get_bbox_3d_projected(bboxes, sensor):
 
 	# Set up calibration matrix to be used for bounding box projection
 	calibration = np.identity(3)
-	VIEW_WIDTH = sensor['settings']['VIEW_WIDTH']
-	VIEW_HEIGHT = sensor['settings']['VIEW_HEIGHT']
-	VIEW_FOV = sensor['settings']['VIEW_FOV']
-	calibration[0, 2] = VIEW_WIDTH / 2.0
-	calibration[1, 2] = VIEW_HEIGHT / 2.0
-	calibration[0, 0] = calibration[1, 1] = VIEW_WIDTH / (2.0 * np.tan(VIEW_FOV * np.pi / 360.0))
+	image_size_x = sensor['settings']['image_size_x']
+	image_size_y = sensor['settings']['image_size_y']
+	fov = sensor['settings']['fov']
+	calibration[0, 2] = image_size_x / 2.0
+	calibration[1, 2] = image_size_y / 2.0
+	calibration[0, 0] = calibration[1, 1] = image_size_x / (2.0 * np.tan(fov * np.pi / 360.0))
 
 	for obj_type in bboxes.keys():
 		for bb in bboxes[obj_type]:

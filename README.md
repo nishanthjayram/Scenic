@@ -61,9 +61,9 @@ This file is another JSON file that lets you configure the number, placement, an
 		"type": "rgb",
 		"transform": [0, 0, 2.4], // sensor xyz coordinates with respect to ego vehicle
 		"settings": {
-			"VIEW_WIDTH": 1280, // horizontal resolution in pixels
-			"VIEW_HEIGHT": 720, // vertical resolution in pixels
-			"VIEW_FOV": 90 // horizontal field of view
+			"image_size_x": 1600, // horizontal resolution in pixels
+			"image_size_y": 900, // vertical resolution in pixels
+			"fov": 90 // horizontal field of view
 		}
 	},
 	{
