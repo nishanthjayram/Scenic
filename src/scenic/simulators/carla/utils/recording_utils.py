@@ -151,7 +151,6 @@ class BBoxUtil(object):
 
         cords = np.zeros((8, 4))
         extent = vehicle.bounding_box.extent
-        # print("Extent: ", extent)
         cords[0, :] = np.array([extent.x, extent.y, -extent.z, 1])
         cords[1, :] = np.array([-extent.x, extent.y, -extent.z, 1])
         cords[2, :] = np.array([-extent.x, -extent.y, -extent.z, 1])
@@ -160,7 +159,6 @@ class BBoxUtil(object):
         cords[5, :] = np.array([-extent.x, extent.y, extent.z, 1])
         cords[6, :] = np.array([-extent.x, -extent.y, extent.z, 1])
         cords[7, :] = np.array([extent.x, -extent.y, extent.z, 1])
-        # print("Cords: ", cords)
         return cords
 
     @staticmethod
@@ -337,15 +335,7 @@ class FrameRecording:
     def get_frame(self, frame_idx):
         return self.frames[frame_idx]
 
-    def get_image(self, frame_idx):
-        # TODO: finish
-        v = VideoRecording()
-        v.add_frame()
-
     def import_from_file(filepath):
-        print('file', filepath)
-        # NOTE: THE ISSUE IS PNG FILE IS NOT JSON AS EXPECTED BELOW
-        # ... CREATE VIDEO RECORDING OBJ AND ADD FRAMES INSTEAD
         with open(filepath, 'r') as f:
             json_data = json.load(f)
 

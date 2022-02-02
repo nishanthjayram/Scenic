@@ -321,9 +321,6 @@ class CarlaSimulation(DrivingSimulation):
 			for obj_class, obj_list in classified_actors.items():
 				# Get bounding boxes relative to RGB camera
 				bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.ego)
-				print("BOUNDING BOXES:")
-				print(obj_class)
-				print(bounding_boxes_3d)
 				rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d)
 				# Convert numpy matrices to lists
 				bboxes[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d]

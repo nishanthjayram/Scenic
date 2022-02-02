@@ -5,8 +5,8 @@
 		"type": "rgb",
 		"transform": [0, 0, 2.4],
 		"settings": {
-			"image_size_x": 1600,
-			"image_size_y": 900,
+			"image_size_x": 1280,
+			"image_size_y": 720,
 			"fov": 90
 		}
 	}
