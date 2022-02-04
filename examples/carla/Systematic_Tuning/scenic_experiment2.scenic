@@ -7,23 +7,6 @@ param map = localPath('../../../tests/formats/opendrive/maps/CARLA/Town10HD')
 param carla_map = 'Town10HD'
 model scenic.simulators.carla.model
 
-# # Define weather attributes as params
-# param weather = {
-#     'cloudiness': 
-#     'precipitation': 
-#     'precipitation_deposits: 
-#     'wind_intensity': 
-#     'sun_azimuth_angle': 
-#     'sun_altitude_angle': 
-#     'fog_density': 
-#     'fog_distance': 
-#     'wetness': 
-#     'fog_falloff: 
-#     'scattering_intensity': 
-#     'mie_scattering_scale': 
-#     'rayleigh_scattering_scale': 0.0331
-# }
-
 # Define RGB camera attributes as params
 param bloom_intensity = Range(0, 1)
 # param fov = 800

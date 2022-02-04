@@ -1,8 +1,8 @@
 {
    "output_dir": "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/output",
    "simulations_per_scenario": 50,
-   "time_per_simulation": 5,
+   "time_per_simulation": 2,
    "scripts": [
-      "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/scenic_experiment2.scenic"
-    ]
+      "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/scenic_experiment1.scenic"
+   ]
 }
