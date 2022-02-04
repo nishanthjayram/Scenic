@@ -182,8 +182,9 @@ def get_bbox_3d_projected(bboxes, sensor):
 	return retval
 
 def draw_bbox_3d(bboxes, sensor, img, output_filepath):
-	bboxes_projected = get_bbox_3d_projected(bboxes, sensor)
-
+	# bboxes_projected = get_bbox_3d_projected(bboxes, sensor)
+	bboxes_projected = bboxes
+	
 	frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 	im_pil = Image.fromarray(frame)
 

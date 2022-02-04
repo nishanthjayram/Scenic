@@ -33,12 +33,12 @@ class BBoxUtil(object):
     """
 
     @staticmethod
-    def get_3d_bounding_boxes_projected(vehicles, camera):
+    def get_3d_bounding_boxes_projected(vehicles, camera, calibration):
         """
         Creates 3D bounding boxes based on carla vehicle list and camera.
         """
 
-        bounding_boxes = [BBoxUtil.get_bounding_box(vehicle, camera) for vehicle in vehicles]
+        bounding_boxes = [BBoxUtil.get_bounding_box(vehicle, camera, calibration) for vehicle in vehicles]
         # filter objects behind camera
         bounding_boxes = [bb for bb in bounding_boxes if all(bb[:, 2] > 0)]
         return bounding_boxes
@@ -131,7 +131,7 @@ class BBoxUtil(object):
         display.blit(bb_surface, (0, 0))
 
     @staticmethod
-    def get_bounding_box(vehicle, camera):
+    def get_bounding_box(vehicle, camera, calibration):
         """
         Returns 3D bounding box for a vehicle based on camera view.
         """
@@ -139,7 +139,7 @@ class BBoxUtil(object):
         bb_cords = BBoxUtil._create_bb_points(vehicle)
         cords_x_y_z = BBoxUtil._vehicle_to_sensor(bb_cords, vehicle, camera)[:3, :]
         cords_y_minus_z_x = np.concatenate([cords_x_y_z[1, :], -cords_x_y_z[2, :], cords_x_y_z[0, :]])
-        bbox = np.transpose(np.dot(camera.calibration, cords_y_minus_z_x))
+        bbox = np.transpose(np.dot(calibration, cords_y_minus_z_x))
         camera_bbox = np.concatenate([bbox[:, 0] / bbox[:, 2], bbox[:, 1] / bbox[:, 2], bbox[:, 2]], axis=1)
         return camera_bbox
 

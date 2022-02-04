@@ -80,7 +80,16 @@ class CarlaSimulation(DrivingSimulation):
 		self.render = render
 		self.record = record
 		if self.render:
-			self.displayDim = (1280, 720)
+			self.hasRGB = False
+			with open(sensor_config, 'r') as f:
+				sensors = json.load(f)
+				for sensor in sensors:
+					if sensor['type'] == 'rgb':
+						self.hasRGB = True
+						self.image_size_x = sensor['settings']['image_size_x']
+						self.image_size_y = sensor['settings']['image_size_y']
+						break
+			self.displayDim = (self.image_size_x, self.image_size_y)
 			self.displayClock = pygame.time.Clock()
 			self.camTransform = 0
 			pygame.init()
@@ -160,11 +169,17 @@ class CarlaSimulation(DrivingSimulation):
 								image_size_y = sensor['settings']['image_size_y']
 								fov = sensor['settings']['fov']
 
+								calibration = np.identity(3)
+								calibration[0, 2] = image_size_x / 2.0
+								calibration[1, 2] = image_size_y / 2.0
+								calibration[0, 0] = calibration[1, 1] = image_size_y / (2.0 * np.tan(fov * np.pi / 360.0))
+
 								sensor_dict = {
 									'name': sensor['name'],
 									'type': sensor['type'],
 									'rgb_buffer': [],
-									'rgb_settings': {}
+									'rgb_settings': {},
+									'calibration': calibration,
 									# 'depth_buffer': [],
 									# 'semantic_buffer': []
 								}
@@ -190,7 +205,6 @@ class CarlaSimulation(DrivingSimulation):
 												 'slope', 'toe', 'shoulder', 'black_clip', 'white_clip',
 												 'temp', 'tint', 'chromatic_aberration_intensity',
 												 'chromatic_aberration_offset', 'enable_postprocess_effects'):
-
 									if cam_attr in scene.params:
 										print(f'Setting {cam_attr} to {scene.params[cam_attr]}...')
 										sensor_dict['rgb_settings'][cam_attr] = scene.params[cam_attr]
@@ -292,6 +306,9 @@ class CarlaSimulation(DrivingSimulation):
 		# Run simulation for one timestep
 		self.world.tick()
 
+		if self.render:
+			self.cameraManager.render(self.display)
+
 		if self.record:
 			actors = self.world.get_actors()
 
@@ -320,8 +337,10 @@ class CarlaSimulation(DrivingSimulation):
 
 			for obj_class, obj_list in classified_actors.items():
 				# Get bounding boxes relative to RGB camera
-				bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.ego)
+				bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes_projected(obj_list, self.sensors[0]['rgb_cam_obj'], self.sensors[0]['calibration'])
 				rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d)
+				if self.render and self.hasRGB:
+					rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d, self.image_size_x, self.image_size_y)
 				# Convert numpy matrices to lists
 				bboxes[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d]
 
@@ -330,7 +349,6 @@ class CarlaSimulation(DrivingSimulation):
 		# Render simulation
 		if self.render:
 			# self.hud.tick(self.world, self.ego, self.displayClock)
-			self.cameraManager.render(self.display)
 			# self.hud.render(self.display)
 			pygame.display.flip()
 
