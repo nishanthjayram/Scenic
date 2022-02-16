@@ -1,5 +1,5 @@
 {
-   "output_dir": "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/output",
+   "output_dir": "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/output/rgb",
    "simulations_per_scenario": 50,
    "time_per_simulation": 2,
    "scripts": [

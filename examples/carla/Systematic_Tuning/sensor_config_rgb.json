@@ -1,6 +1,5 @@
 [
 	{
-
 		"name": "cam",
 		"type": "rgb",
 		"transform": [0, 0, 2.4],

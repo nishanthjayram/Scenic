@@ -81,17 +81,19 @@ class CarlaSimulation(DrivingSimulation):
 		self.record = record
 		if self.render:
 			self.hasRGB = False
-			with open(sensor_config, 'r') as f:
-				sensors = json.load(f)
-				for sensor in sensors:
-					if sensor['type'] == 'rgb':
-						self.hasRGB = True
-						self.image_size_x = sensor['settings']['image_size_x']
-						self.image_size_y = sensor['settings']['image_size_y']
-						break
-			self.displayDim = (self.image_size_x, self.image_size_y)
+			self.displayDim = (1280, 720)
 			self.displayClock = pygame.time.Clock()
 			self.camTransform = 0
+			if sensor_config is not None:
+				with open(sensor_config, 'r') as f:
+					sensors = json.load(f)
+					for sensor in sensors:
+						if sensor['type'] == 'rgb':
+							self.hasRGB = True
+							self.image_size_x = sensor['settings']['image_size_x']
+							self.image_size_y = sensor['settings']['image_size_y']
+							self.displayDim = (self.image_size_x, self.image_size_y)
+							break
 			pygame.init()
 			pygame.font.init()
 			self.hud = visuals.HUD(*self.displayDim)
@@ -172,7 +174,7 @@ class CarlaSimulation(DrivingSimulation):
 								calibration = np.identity(3)
 								calibration[0, 2] = image_size_x / 2.0
 								calibration[1, 2] = image_size_y / 2.0
-								calibration[0, 0] = calibration[1, 1] = image_size_y / (2.0 * np.tan(fov * np.pi / 360.0))
+								calibration[0, 0] = calibration[1, 1] = image_size_x / (2.0 * np.tan(fov * np.pi / 360.0))
 
 								sensor_dict = {
 									'name': sensor['name'],
@@ -338,6 +340,8 @@ class CarlaSimulation(DrivingSimulation):
 			for obj_class, obj_list in classified_actors.items():
 				# Get bounding boxes relative to RGB camera
 				bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes_projected(obj_list, self.sensors[0]['rgb_cam_obj'], self.sensors[0]['calibration'])
+				# bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.sensors[0]['rgb_cam_obj'].get_transform())
+				# bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.ego)
 				rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d)
 				if self.render and self.hasRGB:
 					rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d, self.image_size_x, self.image_size_y)
@@ -473,7 +477,7 @@ class CarlaSimulation(DrivingSimulation):
 					os.mkdir(sensor_dir)
 
 				lidar_filepath = os.path.join(sensor_dir, 'lidar.json')
-				lidar_recording.save(lidar_filepath)
+				lidar_recording.save_lidar(lidar_filepath)
 
 				ply_filepath = os.path.join(sensor_dir, 'lidar.ply')
 				init_point_cloud.save_to_disk(ply_filepath)

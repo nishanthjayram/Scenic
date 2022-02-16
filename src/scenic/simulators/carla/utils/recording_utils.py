@@ -76,6 +76,7 @@ class BBoxUtil(object):
         """
 
         ego_world_matrix = BBoxUtil.get_matrix(ego.carlaActor.get_transform())
+        # ego_world_matrix = BBoxUtil.get_matrix(ego)
         world_ego_matrix = np.linalg.inv(ego_world_matrix)
         ego_cords = np.dot(ego_world_matrix, cords)
         return ego_cords
@@ -341,9 +342,9 @@ class FrameRecording:
 
         return FrameRecording(json_data)
 
-    # def save(self, filepath):
-    #     with open(filepath, 'w') as f:
-    #         json.dump(self.frames, f)
+    def save_lidar(self, filepath):
+        with open(filepath, 'w') as f:
+            json.dump(self.frames, f)
 
     def save(self, file_dir, sensor_name, common_frame_indices, data):
         sensor_dir = os.path.join(file_dir, sensor_name)

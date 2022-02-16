@@ -25,13 +25,13 @@ class SimulationData:
 		# Parameter for lazy fetching of data
 		self.have_fetched_data = False
 
-		# self.bboxes_fpath = os.path.join(simulation_dir, 'annotations', 'bboxes.json')
-		self.bboxes_fpath = os.path.join(simulation_dir, 'bboxes.json')
+		sensor_dir_prefix, _ = os.path.split(simulation_dir)
+
+		self.bboxes_fpath = os.path.join(sensor_dir_prefix, 'annotations', 'bboxes.json')
 		self.bbox_recording = None
 
 		self.sensor_data = {}
 
-		sensor_dir_prefix, _ = os.path.split(simulation_dir)
 		for sensor in sensor_config.get_sensors():
 			sensor_dir = os.path.join(sensor_dir_prefix, sensor['name'])
 
@@ -182,6 +182,7 @@ def get_bbox_3d_projected(bboxes, sensor):
 	return retval
 
 def draw_bbox_3d(bboxes, sensor, img, output_filepath):
+	# print(bboxes)
 	# bboxes_projected = get_bbox_3d_projected(bboxes, sensor)
 	bboxes_projected = bboxes
 	
@@ -216,7 +217,8 @@ def draw_bbox_3d(bboxes, sensor, img, output_filepath):
 	im_pil.save(output_filepath)
 
 def get_bbox_2d(bboxes, sensor):
-	bboxes_projected = get_bbox_3d_projected(bboxes, sensor)
+	# bboxes_projected = get_bbox_3d_projected(bboxes, sensor)
+	bboxes_projected = bboxes
 
 	retval = []
 

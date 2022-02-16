@@ -1,0 +1,14 @@
+[
+	{
+		"name": "lidar",
+		"type": "lidar",
+		"transform": [0, 0, 2.4],
+		"settings": {
+			"PPS": 400000,
+			"UPPER_FOV": 15.0,
+			"LOWER_FOV": -25.0,
+			"RANGE": 40,
+			"ROTATION_FREQUENCY": 18.0
+		}
+	}
+]
