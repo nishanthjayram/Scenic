@@ -207,10 +207,10 @@ class CarlaSimulation(DrivingSimulation):
 												 'slope', 'toe', 'shoulder', 'black_clip', 'white_clip',
 												 'temp', 'tint', 'chromatic_aberration_intensity',
 												 'chromatic_aberration_offset', 'enable_postprocess_effects'):
-									if cam_attr in scene.params:
-										print(f'Setting {cam_attr} to {scene.params[cam_attr]}...')
-										sensor_dict['rgb_settings'][cam_attr] = scene.params[cam_attr]
-										bp.set_attribute(cam_attr, str(scene.params[cam_attr]))
+									if cam_attr in sensor['settings']:
+										sensor_dict['rgb_settings'][cam_attr] = sensor['settings'][cam_attr]
+										print(f"Setting {cam_attr} to {sensor_dict['rgb_settings'][cam_attr]}...")
+										bp.set_attribute(cam_attr, str(sensor_dict['rgb_settings'][cam_attr]))
 
 								rgb_cam = self.world.spawn_actor(bp, sensor_transform, attach_to=carlaActor)
 								rgb_buffer = sensor_dict['rgb_buffer']
