@@ -2,6 +2,8 @@
 ### Top-level functionality of the scenic package as a script:
 ### load a scenario and generate scenes in an infinite loop.
 
+import os
+import json
 import sys
 import time
 import argparse
@@ -10,7 +12,10 @@ import importlib.metadata
 
 import scenic.syntax.translator as translator
 import scenic.core.errors as errors
+from scenic.core.object_types import Point
+from scenic.core.scenarios import Scene
 from scenic.core.simulators import SimulationCreationError
+from scenic.core.vectors import Vector
 
 parser = argparse.ArgumentParser(prog='scenic', add_help=False,
                                  usage='scenic [-h | --help] [options] FILE [options]',
@@ -75,6 +80,11 @@ debugOpts.add_argument('--no-pruning', help='disable pruning', action='store_tru
 debugOpts.add_argument('--gather-stats', type=int, metavar='N',
                        help='collect timing statistics over this many scenes')
 
+# Added by Francis Indaheng, used to fix scenes with calibration project
+parser.add_argument('--store-scene', help='store scenes in pickle file', action='store_true')
+parser.add_argument('--store-scene-dir', help='directory to store scene pickle files', default='./')
+parser.add_argument('--use-stored-scene', help='override generated scene with stored scenes', action='store_true')
+
 parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS,
                     help=argparse.SUPPRESS)
 
@@ -115,11 +125,16 @@ if args.simulate:
     simulator = errors.callBeginningScenicTrace(scenario.getSimulator)
     simulator.toggle_recording(args.record)
 
-def generateScene():
+def generateScene(i=-1):
     startTime = time.time()
-    scene, iterations = errors.callBeginningScenicTrace(
-        lambda: scenario.generate(verbosity=args.verbosity)
-    )
+    if args.store_scene:
+        scene, iterations = errors.callBeginningScenicTrace(
+            lambda: scenario.generate(verbosity=args.verbosity, numScene=i, output_dir=args.store_scene_dir)
+        )
+    else:
+        scene, iterations = errors.callBeginningScenicTrace(
+            lambda: scenario.generate(verbosity=args.verbosity)
+        )
     if args.verbosity >= 1:
         totalTime = time.time() - startTime
         print(f'  Generated scene in {iterations} iterations, {totalTime:.4g} seconds.')
@@ -151,21 +166,47 @@ def runSimulation(scene):
 if args.gather_stats is None:   # Generate scenes interactively until killed
     import matplotlib.pyplot as plt
     successCount = 0
-    while True:
-        scene, _ = generateScene()
-        if args.simulate:
-            success = runSimulation(scene)
-            if success:
-                successCount += 1
-                if 0 < args.count <= successCount:
-                    break
-        else:
-            if delay is None:
-                scene.show(zoom=args.zoom)
+    if args.use_stored_scene:
+        for filename in os.listdir(args.store_scene_dir):
+            file = os.path.join(args.store_scene_dir, filename)
+            scene_lst = json.load(open(file, "r"))
+            scene, _ = generateScene()
+            for i, obj in enumerate(scene.objects):
+                obj.position = Vector(scene_lst[i]['x'], scene_lst[i]['y'])
+                # obj.position.x = scene_lst[i]['x']
+                # obj.position.y = scene_lst[i]['y']
+                obj.heading = scene_lst[i]['h']
+            if args.simulate:
+                success = runSimulation(scene)
+                if success:
+                    successCount += 1
+                    if 0 < args.count <= successCount:
+                        break
             else:
-                scene.show(zoom=args.zoom, block=False)
-                plt.pause(delay)
-                plt.clf()
+                if delay is None:
+                    scene.show(zoom=args.zoom)
+                else:
+                    scene.show(zoom=args.zoom, block=False)
+                    plt.pause(delay)
+                    plt.clf()
+    else:
+        i = 0
+        while True:
+            scene, _ = generateScene(i)
+            i += 1
+            if args.simulate:
+                success = runSimulation(scene)
+                if success:
+                    successCount += 1
+                    if 0 < args.count <= successCount:
+                        break
+            else:
+                if delay is None:
+                    scene.show(zoom=args.zoom)
+                else:
+                    scene.show(zoom=args.zoom, block=False)
+                    plt.pause(delay)
+                    plt.clf()
 else:   # Gather statistics over the specified number of scenes
     its = []
     startTime = time.time()

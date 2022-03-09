@@ -44,16 +44,16 @@ class BBoxUtil(object):
         return bounding_boxes
 
     @staticmethod
-    def get_3d_bounding_boxes(vehicles, ego):
+    def get_3d_bounding_boxes(vehicles, sensor):
         """
-        Creates 3D bounding boxes of vehicles relative to ego.
+        Creates 3D bounding boxes of vehicles relative to sensor.
         """
 
         bounding_boxes = []
 
         for vehicle in vehicles:
             bb_cords = BBoxUtil._create_bb_points(vehicle)
-            bbox = BBoxUtil._vehicle_to_ego(bb_cords, vehicle, ego)[:3, :]
+            bbox = BBoxUtil._vehicle_to_sensor(bb_cords, vehicle, sensor)[:3, :]
             bbox = np.transpose(bbox)
             bounding_boxes.append(bbox)
 
@@ -70,6 +70,16 @@ class BBoxUtil(object):
         return ego_cord
 
     @staticmethod
+    def _vehicle_to_sensor(cords, vehicle, sensor):
+        """
+        Transforms coordinates of a vehicle bounding box to sensor.
+        """
+
+        world_cord = BBoxUtil._vehicle_to_world(cords, vehicle)
+        sensor_cord = BBoxUtil._world_to_sensor(world_cord, sensor)
+        return sensor_cord
+
+    @staticmethod
     def _world_to_ego(cords, ego):
         """
         Transforms world coordinates to ego.
@@ -80,6 +90,18 @@ class BBoxUtil(object):
         world_ego_matrix = np.linalg.inv(ego_world_matrix)
         ego_cords = np.dot(ego_world_matrix, cords)
         return ego_cords
+
+    @staticmethod
+    def _world_to_sensor(cords, sensor):
+        """
+        Transforms world coordinates to sensor.
+        """
+
+        sensor_world_matrix = BBoxUtil.get_matrix(sensor.get_transform())
+        # ego_world_matrix = BBoxUtil.get_matrix(ego)
+        world_sensor_matrix = np.linalg.inv(sensor_world_matrix)
+        sensor_cords = np.dot(sensor_world_matrix, cords)
+        return sensor_cords
 
     @staticmethod
     def get_2d_bounding_boxes(bounding_boxes_3d):

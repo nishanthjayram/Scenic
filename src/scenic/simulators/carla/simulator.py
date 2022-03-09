@@ -5,6 +5,7 @@ except ImportError as e:
 	raise ModuleNotFoundError('CARLA scenarios require the "carla" Python package') from e
 
 import math
+from reprlib import recursive_repr
 
 from scenic.syntax.translator import verbosity
 if verbosity == 0:	# suppress pygame advertisement at zero verbosity
@@ -103,7 +104,8 @@ class CarlaSimulation(DrivingSimulation):
 			)
 			self.cameraManager = None
 
-		self.bbox_buffer = []
+		self.bbox_3d_buffer = []
+		self.bbox_3d_proj_buffer = []
 
 		# Create Carla actors corresponding to Scenic objects
 		self.ego = None
@@ -334,21 +336,25 @@ class CarlaSimulation(DrivingSimulation):
 				elif a.type_id in walkerModels:
 					classified_actors['pedestrian'].append(a)
 
-			bboxes = {}
+			bboxes_3d_proj = {}  # 3-D bounding boxes projected onto camera image
+			bboxes_3d = {}  # 3-D bounding boxes relative to camera
 			curr_frame_idx = self.world.get_snapshot().frame
 
 			for obj_class, obj_list in classified_actors.items():
 				# Get bounding boxes relative to RGB camera
-				bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes_projected(obj_list, self.sensors[0]['rgb_cam_obj'], self.sensors[0]['calibration'])
-				# bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.sensors[0]['rgb_cam_obj'].get_transform())
 				# bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.ego)
-				rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d)
-				if self.render and self.hasRGB:
-					rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d, self.image_size_x, self.image_size_y)
-				# Convert numpy matrices to lists
-				bboxes[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d]
+				if 'rgb_cam_obj' in self.sensors[0]:
+					bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.sensors[0]['rgb_cam_obj'])
+					bounding_boxes_3d_proj = rec_utils.BBoxUtil.get_3d_bounding_boxes_projected(obj_list, self.sensors[0]['rgb_cam_obj'], self.sensors[0]['calibration'])
+					bboxes_3d_proj[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d_proj]
+					if self.render and self.hasRGB:
+						rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d_proj, self.image_size_x, self.image_size_y)
+				elif 'lidar_obj' in  self.sensors[0]:
+					bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.sensors[0]['lidar_obj'])
+				bboxes_3d[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d]
 
-			self.bbox_buffer.append((curr_frame_idx, bboxes))
+			self.bbox_3d_buffer.append((curr_frame_idx, bboxes_3d))
+			self.bbox_3d_proj_buffer.append((curr_frame_idx, bboxes_3d_proj))
 
 		# Render simulation
 		if self.render:
@@ -427,7 +433,7 @@ class CarlaSimulation(DrivingSimulation):
 				common_frame_idxes = common_frame_idxes.intersection(frame_idxes)
 
 		# Intersect with bounding box frame indices
-		common_frame_idxes = common_frame_idxes.intersection({frame_idx for frame_idx, _ in self.bbox_buffer})
+		common_frame_idxes = common_frame_idxes.intersection({frame_idx for frame_idx, _ in self.bbox_3d_proj_buffer})
 
 		common_frame_idxes = sorted(list(common_frame_idxes))
 
@@ -494,15 +500,21 @@ class CarlaSimulation(DrivingSimulation):
 		if not os.path.isdir(bbox_dir):
 			os.mkdir(bbox_dir)
 
-		bbox_recording = rec_utils.BBoxRecording()
+		bbox_3d_recording = rec_utils.BBoxRecording()
+		bbox_3d_proj_recording = rec_utils.BBoxRecording()
 
-		bbox_data = {frame_idx: bboxes for frame_idx, bboxes in self.bbox_buffer}
+		bbox_3d_proj_data = {frame_idx: bboxes for frame_idx, bboxes in self.bbox_3d_proj_buffer}
+		bbox_3d_data = {frame_idx: bboxes for frame_idx, bboxes in self.bbox_3d_buffer}
 
 		for frame_idx in common_frame_idxes:
-			bbox_recording.add_frame(bbox_data[frame_idx])
+			bbox_3d_proj_recording.add_frame(bbox_3d_proj_data[frame_idx])
+			bbox_3d_recording.add_frame(bbox_3d_data[frame_idx])
 
-		bbox_filepath = os.path.join(bbox_dir, 'bboxes.json')
-		bbox_recording.save(bbox_filepath)
+		bbox_3d_filepath = os.path.join(bbox_dir, 'bboxes_3d.json')
+		bbox_3d_recording.save(bbox_3d_filepath)
+
+		bbox_3d_proj_filepath = os.path.join(bbox_dir, 'bboxes_proj.json')
+		bbox_3d_proj_recording.save(bbox_3d_proj_filepath)
 
 		for sensor in self.sensors:
 			if sensor['type'] == 'rgb':

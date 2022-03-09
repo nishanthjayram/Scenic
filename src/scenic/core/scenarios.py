@@ -1,5 +1,6 @@
 """Scenario and scene objects."""
 
+import json
 import random
 import time
 
@@ -156,7 +157,7 @@ class Scenario:
 			return False
 		return True
 
-	def generate(self, maxIterations=2000, verbosity=0, feedback=None):
+	def generate(self, maxIterations=2000, verbosity=0, feedback=None, numScene=-1, output_dir='./'):
 		"""Sample a `Scene` from this scenario.
 
 		Args:
@@ -257,6 +258,12 @@ class Scenario:
 		scene = Scene(self.workspace, sampledObjects, ego, sampledParams,
 					  alwaysReqs, terminationConds, termSimulationConds, self.monitors,
 					  sampledNamespaces, self.dynamicScenario)
+
+		# Added by Francis Indaheng, used to fix scenes with calibration project
+		if numScene != -1:
+			scene_lst = [{'x': obj.position.x, 'y': obj.position.y, 'h': obj.heading} for obj in scene.objects]
+			json.dump(scene_lst, open(f"{output_dir}/{numScene}.json", "w"))
+
 		return scene, iterations
 
 	def resetExternalSampler(self):
