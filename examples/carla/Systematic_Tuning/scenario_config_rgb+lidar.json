@@ -1,0 +1,13 @@
+{
+   "output_dir": "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/output/rgb+lidar",
+   "simulations_per_scenario": 50,
+   "time_per_simulation": 2,
+   "scripts": [
+      "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/scripts/scenario1_bypass.scenic",
+      "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/scripts/scenario2_oppositeRoadCar_clearNoon.scenic",
+      "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/scripts/scenario2_oppositeRoadCar_cloudyNoon.scenic",
+      "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/scripts/scenario2_oppositeRoadCar_midRainyNoon.scenic",
+      "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/scripts/scenario3_cyclistOnRight.scenic",
+      "/home/carla_challenge/Desktop/SystematicTuning/scenic/examples/carla/Systematic_Tuning/scripts/scenario4_egoOnIntersection.scenic"
+   ]
+}

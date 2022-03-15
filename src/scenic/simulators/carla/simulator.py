@@ -195,20 +195,20 @@ class CarlaSimulation(DrivingSimulation):
 								bp.set_attribute('fov', str(fov))
 
 								for cam_attr in ('bloom_intensity', 'fov', 'fstop',
-												 'image_size_x', 'image_size_y', 'iso',
-												 'gamma', 'lens_flare_intensity',
-												 'sensor_tick', 'shutter_speed', 'lens_circle_falloff',
-												 'lens_circle_multiplier', 'lens_k', 'lens_kcube',
-												 'lens_x_size', 'lens_y_size', 'min_fstop',
-												 'blade_count', 'exposure_mode', 'exposure_compensation',
-												 'exposure_min_bright', 'exposure_max_bright',
-												 'exposure_speed_up', 'exposure_speed_down',
-												 'calibration_constant', 'focal_distance',
-												 'blur_amount', 'blur_radius', 'motion_blur_intensity',
-												 'motion_blur_max_distortion', 'motion_blur_min_object_screen_size',
-												 'slope', 'toe', 'shoulder', 'black_clip', 'white_clip',
-												 'temp', 'tint', 'chromatic_aberration_intensity',
-												 'chromatic_aberration_offset', 'enable_postprocess_effects'):
+												'image_size_x', 'image_size_y', 'iso',
+												'gamma', 'lens_flare_intensity',
+												'sensor_tick', 'shutter_speed', 'lens_circle_falloff',
+												'lens_circle_multiplier', 'lens_k', 'lens_kcube',
+												'lens_x_size', 'lens_y_size', 'min_fstop',
+												'blade_count', 'exposure_mode', 'exposure_compensation',
+												'exposure_min_bright', 'exposure_max_bright',
+												'exposure_speed_up', 'exposure_speed_down',
+												'calibration_constant', 'focal_distance',
+												'blur_amount', 'blur_radius', 'motion_blur_intensity',
+												'motion_blur_max_distortion', 'motion_blur_min_object_screen_size',
+												'slope', 'toe', 'shoulder', 'black_clip', 'white_clip',
+												'temp', 'tint', 'chromatic_aberration_intensity',
+												'chromatic_aberration_offset', 'enable_postprocess_effects'):
 									if cam_attr in sensor['settings']:
 										sensor_dict['rgb_settings'][cam_attr] = sensor['settings'][cam_attr]
 										print(f"Setting {cam_attr} to {sensor_dict['rgb_settings'][cam_attr]}...")
@@ -341,18 +341,18 @@ class CarlaSimulation(DrivingSimulation):
 			curr_frame_idx = self.world.get_snapshot().frame
 
 			for obj_class, obj_list in classified_actors.items():
-				# Get bounding boxes relative to RGB camera
-				# bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.ego)
-				if 'rgb_cam_obj' in self.sensors[0]:
-					bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.sensors[0]['rgb_cam_obj'])
-					bounding_boxes_3d_proj = rec_utils.BBoxUtil.get_3d_bounding_boxes_projected(obj_list, self.sensors[0]['rgb_cam_obj'], self.sensors[0]['calibration'])
-					bboxes_3d_proj[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d_proj]
-					if self.render and self.hasRGB:
-						rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d_proj, self.image_size_x, self.image_size_y)
-				elif 'lidar_obj' in  self.sensors[0]:
-					bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, self.sensors[0]['lidar_obj'])
-				bboxes_3d[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d]
-
+				# Get bounding boxes relative to sensors
+				for s in self.sensors:
+					if 'rgb_cam_obj' in s:
+						bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, s['rgb_cam_obj'])
+						bounding_boxes_3d_proj = rec_utils.BBoxUtil.get_3d_bounding_boxes_projected(obj_list, s['rgb_cam_obj'], s['calibration'])
+						bboxes_3d[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d]
+						bboxes_3d_proj[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d_proj]
+						if self.render and self.hasRGB:
+							rec_utils.BBoxUtil.draw_bounding_boxes(self.display, bounding_boxes_3d_proj, self.image_size_x, self.image_size_y)
+					elif 'lidar_obj' in s:
+						bounding_boxes_3d = rec_utils.BBoxUtil.get_3d_bounding_boxes(obj_list, s['lidar_obj'])
+						bboxes_3d[obj_class] = [bbox.tolist() for bbox in bounding_boxes_3d]
 			self.bbox_3d_buffer.append((curr_frame_idx, bboxes_3d))
 			self.bbox_3d_proj_buffer.append((curr_frame_idx, bboxes_3d_proj))
 

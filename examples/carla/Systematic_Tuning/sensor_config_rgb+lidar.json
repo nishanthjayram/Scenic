@@ -1,0 +1,32 @@
+[
+	{
+		"name": "cam",
+		"type": "rgb",
+		"transform": [
+			0,
+			0,
+			2.4
+		],
+		"settings": {
+			"image_size_x": 1280,
+			"image_size_y": 720,
+			"fov": 90
+		}
+	},
+	{
+		"name": "lidar",
+		"type": "lidar",
+		"transform": [
+			0,
+			0,
+			2.4
+		],
+		"settings": {
+			"PPS": 400000,
+			"UPPER_FOV": 15.0,
+			"LOWER_FOV": -25.0,
+			"RANGE": 40,
+			"ROTATION_FREQUENCY": 18.0
+		}
+	}
+]
