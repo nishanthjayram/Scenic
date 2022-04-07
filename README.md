@@ -54,8 +54,7 @@ A sample scenario configuration file, which must be saved in the JSON format, is
 This file is another JSON file that lets you configure the number, placement, and type of sensors with which to record. Right now, RGB video cameras and lidar sensors are supported (with ground-truth annotations). An example configuration file is as follows:
 
 ```
-{
-   [
+[
 	{
 		"name": "cam", // each sensor must have an associated unique name
 		"type": "rgb",
