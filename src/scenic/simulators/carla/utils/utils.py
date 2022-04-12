@@ -1,4 +1,3 @@
-from numpy import isin
 import carla
 import json
 import math
