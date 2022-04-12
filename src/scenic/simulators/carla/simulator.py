@@ -55,11 +55,17 @@ class CarlaSimulator(DrivingSimulator):
 		self.record = record  # whether to use the carla recorder
 		self.scenario_number = 0  # Number of the scenario executed
 
+		# Load or initialize symmetry cache
+		self.cache = utils.cache_read()
+		if self.cache is None:
+			self.cache = {}
+
 	def createSimulation(self, scene, verbosity=0):
 		self.scenario_number += 1
 		return CarlaSimulation(scene, self.client, self.tm, self.timestep,
 							   render=self.render, record=self.record,
-							   scenario_number=self.scenario_number, verbosity=verbosity)
+							   scenario_number=self.scenario_number,
+								 cache=self.cache, verbosity=verbosity)
 
 	def destroy(self):
 		settings = self.world.get_settings()
@@ -72,13 +78,16 @@ class CarlaSimulator(DrivingSimulator):
 
 
 class CarlaSimulation(DrivingSimulation):
-	def __init__(self, scene, client, tm, timestep, render, record, scenario_number, verbosity=0):
+	def __init__(self, scene, client, tm, timestep, render, record, scenario_number, cache, verbosity=0):
 		super().__init__(scene, timestep=timestep, verbosity=verbosity)
 		self.client = client
 		self.world = self.client.get_world()
 		self.map = self.world.get_map()
 		self.blueprintLib = self.world.get_blueprint_library()
 		self.tm = tm
+		self.cache = cache
+		# Stores cache entries that need resulting trajectory stored
+		self.cache_buffer = []
 		
 		weather = scene.params.get("weather")
 		if weather is not None:
@@ -186,9 +195,22 @@ class CarlaSimulation(DrivingSimulation):
 		return carlaActor
 
 	def executeActions(self, allActions):
-		super().executeActions(allActions)
+		"""Executes actions in simulator and caches results."""
+
+		for agent, actions in allActions.items():
+			for action in actions:
+				init_pos = (agent.position.x, agent.position.y)
+				cacheKey = (round(agent.velocity.x, 2),
+										round(agent.velocity.y, 2),
+										action.__class__.__name__,
+										*action._get_args())
+				action.applyTo(agent, self)
+				self.cache[cacheKey] = (agent.position.x - init_pos[0],
+															  agent.position.y - init_pos[1])
+			agent.lastActions = actions
 
 		# Apply control updates which were accumulated while executing the actions
+		# TODO: figure out how to handle the block below
 		for obj in self.agents:
 			ctrl = obj._control
 			if ctrl is not None:
@@ -230,6 +252,9 @@ class CarlaSimulation(DrivingSimulation):
 		return values
 
 	def destroy(self):
+		# Write cached trajectories to file
+		utils.cache_write(self.cache)
+
 		for obj in self.objects:
 			if obj.carlaActor is not None:
 				if isinstance(obj.carlaActor, carla.Vehicle):

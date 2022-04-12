@@ -178,6 +178,9 @@ class RegulatedControlAction(SteeringAction):
 		obj.setBraking(self.brake)
 		obj.setSteering(self.steer)
 
+	def _get_args(self):
+		return self.throttle, self.brake, self.steer
+
 ## Actions available to agents that can walk
 
 class WalkingAction(Action):

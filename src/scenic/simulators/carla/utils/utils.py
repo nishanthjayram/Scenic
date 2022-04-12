@@ -1,4 +1,6 @@
+from numpy import isin
 import carla
+import json
 import math
 
 from scenic.core.vectors import Vector
@@ -68,3 +70,20 @@ def scenicToCarlaTrafficLightStatus(status):
 
 def carlaToScenicTrafficLightStatus(status):
 	return str(status).lower()
+
+def cache_write(cache):
+	assert isinstance(cache, dict), 'Error: Cache is not a dictionary.'
+	f = open('../cache/carla.json', 'w')
+	data = [{'key': k, 'value': v} for k, v in cache.items()]
+	json.dumps(data, f)
+
+def cache_read():
+	try:
+		f = open('../cache/carla.json', 'r')
+		data = json.load(f)
+		cache = {}
+		for elem in data:
+			cache[tuple(elem['key'])] = tuple(elem['value'])
+		return cache
+	except FileNotFoundError:
+		return None
