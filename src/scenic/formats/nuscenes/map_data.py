@@ -26,10 +26,6 @@ class NuScenesMapData:
 		self.map_name = map_name
 		self.nusc_map = NuScenesMap(dataroot=dataroot, map_name=map_name)
 		self.tolerance = tolerance
-		# Road segments that are too small to work with
-		self.invalid_road_segment_tokens = {
-			'boston-seaport': ['ff6335c7-bc4a-415a-961b-c832309c7ddb']
-		}
 		
 	def toScenicNetwork(self):
 		# Find all road blocks within each road segment
@@ -84,10 +80,6 @@ class NuScenesMapData:
 		network_elements = {}
 
 		for road_segment_token, road_block_list in list(road_segment_blocks.items()):
-			if self.map_name in self.invalid_road_segment_tokens \
-				 and road_segment_token in self.invalid_road_segment_tokens[self.map_name]:
-				continue
-				
 			lanes_for_road_segment = []
 			lane_groups_for_road_segment = []
 			lane_secs_for_road_segment = [] # List of lists of lane sections
