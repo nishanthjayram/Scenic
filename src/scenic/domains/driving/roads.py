@@ -923,7 +923,27 @@ class Network:
         if ext == cls.pickledExt:
             return cls.fromPickle(path)
 
-        if ext != 'nuscenes':
+        if ext == 'nuscenes':
+            dataroot = '/'.join(str(path).split('/')[:-1])
+            map_name = str(path).split('/')[-1]
+            mapPath = pathlib.Path(f'{dataroot}/maps/expansion/{map_name}')
+            with open(mapPath.with_suffix('.json'), 'rb') as f:
+                data = f.read()
+            digest = hashlib.blake2b(data).digest()
+            pickledPath = mapPath.with_suffix(cls.pickledExt)
+            if useCache and pickledPath.exists():
+                try:
+                    return cls.fromPickle(pickledPath, originalDigest=digest)
+                except pickle.UnpicklingError:
+                    verbosePrint('Unable to load cached network (old format or corrupted).')
+                except cls.DigestMismatchError:
+                    verbosePrint('Cached network does not match original file; ignoring it.')
+            network = handlers[ext](dataroot, map_name, **kwargs)
+            if writeCache:
+                verbosePrint(f'Caching road network in {cls.pickledExt} file.')
+                pickledPath = pathlib.Path(f'{dataroot}/maps/expansion/{map_name}')
+                network.dumpPickle(pickledPath.with_suffix(cls.pickledExt), digest)
+        else:
             # Otherwise, hash the underlying file to detect when the pickle is outdated
             with open(path, 'rb') as f:
                 data = f.read()
@@ -938,17 +958,11 @@ class Network:
                     verbosePrint('Unable to load cached network (old format or corrupted).')
                 except cls.DigestMismatchError:
                     verbosePrint('Cached network does not match original file; ignoring it.')
-
-        # Not using the pickled version; parse the original file based on its extension
-        if ext == 'nuscenes':
-            dataroot = '/'.join(str(path).split('/')[:-1])
-            map_name = str(path).split('/')[-1]
-            network = handlers[ext](dataroot, map_name, **kwargs)
-        else:
+            # Not using the pickled version; parse the original file based on its extension
             network = handlers[ext](path, **kwargs)
-        if writeCache:
-            verbosePrint(f'Caching road network in {cls.pickledExt} file.')
-            network.dumpPickle(path.with_suffix(cls.pickledExt), digest)
+            if writeCache:
+                verbosePrint(f'Caching road network in {cls.pickledExt} file.')
+                network.dumpPickle(path.with_suffix(cls.pickledExt), digest)
         return network
 
     @classmethod
