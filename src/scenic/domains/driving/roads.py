@@ -906,6 +906,7 @@ class Network:
 
         handlers = {    # in order of decreasing priority
             '.xodr': cls.fromOpenDrive,         # OpenDRIVE
+            'nuscenes': cls.fromNuScenes,       # NuScenes
 
             # Pickled native representation; this is the lowest priority, since original
             # maps should take precedence, but if the pickled version exists and matches
@@ -913,16 +914,8 @@ class Network:
             cls.pickledExt: cls.fromPickle
         }
 
-        if not ext:     # no extension was given; search through possible formats
-            found = False
-            for ext in handlers:
-                newPath = path.with_suffix(ext)
-                if newPath.exists():
-                    path = newPath
-                    found = True
-                    break
-            if not found:
-                raise FileNotFoundError(f'no readable maps found for path {path}')
+        if not ext:  # assume nuscenes map directory was given
+            ext = 'nuscenes'
         elif ext not in handlers:
             raise ValueError(f'unknown type of road network file {path}')
 
@@ -930,23 +923,29 @@ class Network:
         if ext == cls.pickledExt:
             return cls.fromPickle(path)
 
-        # Otherwise, hash the underlying file to detect when the pickle is outdated
-        with open(path, 'rb') as f:
-            data = f.read()
-        digest = hashlib.blake2b(data).digest()
+        if ext != 'nuscenes':
+            # Otherwise, hash the underlying file to detect when the pickle is outdated
+            with open(path, 'rb') as f:
+                data = f.read()
+            digest = hashlib.blake2b(data).digest()
 
-        # By default, use the pickled version if it exists and is not outdated
-        pickledPath = path.with_suffix(cls.pickledExt)
-        if useCache and pickledPath.exists():
-            try:
-                return cls.fromPickle(pickledPath, originalDigest=digest)
-            except pickle.UnpicklingError:
-                verbosePrint('Unable to load cached network (old format or corrupted).')
-            except cls.DigestMismatchError:
-                verbosePrint('Cached network does not match original file; ignoring it.')
+            # By default, use the pickled version if it exists and is not outdated
+            pickledPath = path.with_suffix(cls.pickledExt)
+            if useCache and pickledPath.exists():
+                try:
+                    return cls.fromPickle(pickledPath, originalDigest=digest)
+                except pickle.UnpicklingError:
+                    verbosePrint('Unable to load cached network (old format or corrupted).')
+                except cls.DigestMismatchError:
+                    verbosePrint('Cached network does not match original file; ignoring it.')
 
         # Not using the pickled version; parse the original file based on its extension
-        network = handlers[ext](path, **kwargs)
+        if ext == 'nuscenes':
+            dataroot = '/'.join(str(path).split('/')[:-1])
+            map_name = str(path).split('/')[-1]
+            network = handlers[ext](dataroot, map_name, **kwargs)
+        else:
+            network = handlers[ext](path, **kwargs)
         if writeCache:
             verbosePrint(f'Caching road network in {cls.pickledExt} file.')
             network.dumpPickle(path.with_suffix(cls.pickledExt), digest)
@@ -981,6 +980,19 @@ class Network:
         network = road_map.toScenicNetwork()
         totalTime = time.time() - startTime
         verbosePrint(f'Finished loading OpenDRIVE map in {totalTime:.2f} seconds.')
+        return network
+
+    @classmethod
+    def fromNuScenes(cls, dataroot, map_name, tolerance=0.05):
+        """Create a `Network` from a nuScenes map.
+
+        Args:
+            dataroot: Path to the directory, as in `Network.fromFile`.
+            map_name: Name of nuScenes map to model
+        """
+        from scenic.formats.nuscenes.map_data import NuScenesMapData
+        road_map = NuScenesMapData(dataroot, map_name, tolerance)
+        network = road_map.toScenicNetwork()
         return network
 
     @classmethod
