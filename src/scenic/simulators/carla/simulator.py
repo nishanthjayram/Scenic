@@ -67,6 +67,9 @@ class CarlaSimulation(DrivingSimulation):
 		self.world = self.client.get_world()
 		self.blueprintLib = self.world.get_blueprint_library()
 
+		if "_Opt" in map:
+			self.world.unload_map_layer(carla.MapLayer.ParkedVehicles)
+
 		weather = scene.params.get("weather")
 		if weather is not None:
 			if isinstance(weather, str):
@@ -281,6 +284,7 @@ class CarlaSimulation(DrivingSimulation):
 								radar_sensor = self.world.spawn_actor(bp, sensor_transform, attach_to=carlaActor)
 								radar_sensor.listen(lambda x: self.process_radar_data(x, sensor_dict['radar_buffer']))
 								sensor_dict['radar_obj'] = radar_sensor
+
 
 		self.world.tick() ## allowing manualgearshift to take effect 
 
