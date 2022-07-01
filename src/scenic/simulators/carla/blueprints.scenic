@@ -10,12 +10,12 @@ carModels = {# for speed = 10
       # 'vehicle.bmw.isetta', # current PID controller not work 
       'vehicle.chevrolet.impala',
       'vehicle.citroen.c3',
-      'vehicle.dodge_charger.police',
-      'vehicle.mustang.mustang',
+      'vehicle.dodge.charger_police',
+      'vehicle.ford.mustang',
       # 'vehicle.jeep.wrangler_rubicon',  # current PID controller not work 
-      'vehicle.lincoln.mkz2017',
+      'vehicle.lincoln.mkz_2017',
       # 'vehicle.mercedes-benz.coupe',
-      'vehicle.mini.cooperst',
+      'vehicle.mini.cooper_s',
       'vehicle.nissan.micra',
       'vehicle.nissan.patrol',
       'vehicle.seat.leon',
