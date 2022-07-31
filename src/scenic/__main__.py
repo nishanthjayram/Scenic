@@ -162,62 +162,65 @@ def runSimulation(scene):
         totalTime = time.time() - startTime
         print(f'  Ran simulation in {totalTime:.4g} seconds.')
     return result is not None
-
-if args.gather_stats is None:   # Generate scenes interactively until killed
-    import matplotlib.pyplot as plt
-    successCount = 0
-    if args.use_stored_scene:
-        for filename in os.listdir(args.store_scene_dir):
-            file = os.path.join(args.store_scene_dir, filename)
-            scene_lst = json.load(open(file, "r"))
-            scene, _ = generateScene()
-            for i, obj in enumerate(scene.objects):
-                obj.position = Vector(scene_lst[i]['x'], scene_lst[i]['y'])
-                # obj.position.x = scene_lst[i]['x']
-                # obj.position.y = scene_lst[i]['y']
-                obj.heading = scene_lst[i]['h']
-            if args.simulate:
-                success = runSimulation(scene)
-                if success:
-                    successCount += 1
-                    if 0 < args.count <= successCount:
-                        break
-            else:
-                if delay is None:
-                    scene.show(zoom=args.zoom)
+try:
+    if args.gather_stats is None:   # Generate scenes interactively until killed
+        import matplotlib.pyplot as plt
+        successCount = 0
+        if args.use_stored_scene:
+            for filename in os.listdir(args.store_scene_dir):
+                file = os.path.join(args.store_scene_dir, filename)
+                scene_lst = json.load(open(file, "r"))
+                scene, _ = generateScene()
+                for i, obj in enumerate(scene.objects):
+                    obj.position = Vector(scene_lst[i]['x'], scene_lst[i]['y'])
+                    # obj.position.x = scene_lst[i]['x']
+                    # obj.position.y = scene_lst[i]['y']
+                    obj.heading = scene_lst[i]['h']
+                if args.simulate:
+                    success = runSimulation(scene)
+                    if success:
+                        successCount += 1
+                        if 0 < args.count <= successCount:
+                            break
                 else:
-                    scene.show(zoom=args.zoom, block=False)
-                    plt.pause(delay)
-                    plt.clf()
-    else:
-        i = 0
-        while True:
-            scene, _ = generateScene(i)
-            i += 1
-            if args.simulate:
-                success = runSimulation(scene)
-                if success:
-                    successCount += 1
-                    if 0 < args.count <= successCount:
-                        break
-            else:
-                if delay is None:
-                    scene.show(zoom=args.zoom)
+                    if delay is None:
+                        scene.show(zoom=args.zoom)
+                    else:
+                        scene.show(zoom=args.zoom, block=False)
+                        plt.pause(delay)
+                        plt.clf()
+        else:
+            i = 0
+            while True:
+                scene, _ = generateScene(i)
+                i += 1
+                if args.simulate:
+                    success = runSimulation(scene)
+                    if success:
+                        successCount += 1
+                        if 0 < args.count <= successCount:
+                            break
                 else:
-                    scene.show(zoom=args.zoom, block=False)
-                    plt.pause(delay)
-                    plt.clf()
-else:   # Gather statistics over the specified number of scenes
-    its = []
-    startTime = time.time()
-    while len(its) < args.gather_stats:
-        scene, iterations = generateScene()
-        its.append(iterations)
-    totalTime = time.time() - startTime
-    count = len(its)
-    print(f'Sampled {len(its)} scenes in {totalTime:.2f} seconds.')
-    print(f'Average iterations/scene: {sum(its)/count}')
-    print(f'Average time/scene: {totalTime/count:.2f} seconds.')
+                    if delay is None:
+                        scene.show(zoom=args.zoom)
+                    else:
+                        scene.show(zoom=args.zoom, block=False)
+                        plt.pause(delay)
+                        plt.clf()
+    else:   # Gather statistics over the specified number of scenes
+        its = []
+        startTime = time.time()
+        while len(its) < args.gather_stats:
+            scene, iterations = generateScene()
+            its.append(iterations)
+        totalTime = time.time() - startTime
+        count = len(its)
+        print(f'Sampled {len(its)} scenes in {totalTime:.2f} seconds.')
+        print(f'Average iterations/scene: {sum(its)/count}')
+        print(f'Average time/scene: {totalTime/count:.2f} seconds.')
+finally:
+    if args.simulate:
+        simulator.destroy()
 
 def dummy():    # for the 'scenic' entry point to call after importing this module
     pass

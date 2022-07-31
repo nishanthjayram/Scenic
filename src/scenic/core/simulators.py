@@ -71,6 +71,10 @@ class Simulator:
 
     def is_recording(self):
         return False
+    
+    def destroy(self):
+        """Clean up as needed when shutting down the simulator interface."""
+        pass
 
 class Simulation:
     """A single simulation run, possibly in progress."""
@@ -177,6 +181,7 @@ class Simulation:
             result = SimulationResult(trajectory, actionSequence, terminationReason)
             return result
         finally:
+            self.destroy()
             for obj in self.scene.objects:
                 disableDynamicProxyFor(obj)
             for agent in self.agents:
@@ -266,6 +271,10 @@ class Simulation:
 
     def save_recordings(self, scene_name):
         raise NotImplementedError
+    
+    def destroy(self):
+        """Perform any cleanup necessary to reset the simulator after a simulation."""
+        pass
 
 class DummySimulator(Simulator):
     """Simulator which does nothing, for debugging purposes."""
