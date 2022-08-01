@@ -29,7 +29,7 @@ import json
 
 class CarlaSimulator(DrivingSimulator):
 	def __init__(self, carla_map, address='127.0.0.1', port=2000, timeout=10,
-		         render=True, record=False, timestep=0.1, traffic_manager_port=None):
+		         render=True, record=False, timestep=0.1):
 		super().__init__()
 		verbosePrint('Connecting to CARLA...')
 		self.client = carla.Client(address, port)
@@ -37,11 +37,6 @@ class CarlaSimulator(DrivingSimulator):
 		self.world = self.client.load_world(carla_map)
 		self.map = carla_map
 		self.timestep = timestep
-
-		if traffic_manager_port is None:
-			traffic_manager_port = port + 6000
-		self.tm = self.client.get_trafficmanager(traffic_manager_port)
-		self.tm.set_synchronous_mode(True)
 
 		# Set to synchronous with fixed timestep
 		settings = self.world.get_settings()
@@ -69,7 +64,6 @@ class CarlaSimulator(DrivingSimulator):
 		settings.synchronous_mode = False
 		settings.fixed_delta_seconds = None
 		self.world.apply_settings(settings)
-		self.tm.set_synchronous_mode(False)
 
 		super().destroy()
 
@@ -542,11 +536,14 @@ class CarlaSimulation(DrivingSimulation):
 					json.dump(sensor['rgb_settings'], f, indent=4)
 	
 	def destroy(self):
-		for s in self.sensors:
-			if 'rgb_cam_obj' in s:
-				s['rgb_cam_obj'].destroy()
-			elif 'lidar_obj' in s:
-				s['lidar_obj'].destroy()
+		try:
+			for s in self.sensors:
+				if 'rgb_cam_obj' in s:
+					s['rgb_cam_obj'].destroy()
+				elif 'lidar_obj' in s:
+					s['lidar_obj'].destroy()
+		except AttributeError:
+			pass
 		for obj in self.objects:
 			if obj.carlaActor is not None:
 				obj.carlaActor.destroy()
